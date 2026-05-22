@@ -109,6 +109,15 @@
           "mathjax",
           "typst"
         ]
+      },
+      "katexOptions": {
+        "type": "object"
+      },
+      "mathJaxOptions": {
+        "type": "object"
+      },
+      "typstOptions": {
+        "type": "object"
       }
     }
   }
