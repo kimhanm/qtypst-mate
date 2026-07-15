@@ -1,34 +1,36 @@
-# @quartz-community/latex
+# quartz plugin qtypst-mate
+Typst rendering [Quartz](https://quartz.jzhao.xzy) plugin compatible with the Obsidian plugin [typst-mate](https://github.com/azyarashi/obsidian-typst-mate).
+Math and typst blocks are rendered to SVG at build-time.
 
-Renders LaTeX math equations using KaTeX, MathJax, or Typst rendering engines.
+
+Will hopefully be added to `@quartz-community/qtypst-mate`
+
+## Features
+- inline (`$...$`) and display (`$$...$$`) math
+- tag-based preamble includes (see typst-mate)
+- per-file fallback engine `math-engine: katex`
+- per-expression fallback engine `$tex: \int_\Omega \mathrm{d} \omega$`
+- customizable codeblock processors: ` ```typst `, ` ```fletcher `, ...
+- download packges from [Typst Universe](https://typst.app/universe/) (`@preview`) 
+
+
 
 ## Installation
-
+Disable the `latex` plugin.
 ```bash
-npx quartz plugin add github:quartz-community/latex
+npx quartz plugin add #TODO
 ```
 
-## Usage
 
 ```yaml title="quartz.config.yaml"
 plugins:
-  - source: github:quartz-community/latex
+  - source: #TODO
     enabled: true
     options:
       renderEngine: katex
 ```
 
-For advanced use cases, you can override in TypeScript:
-
-```ts title="quartz.ts (override)"
-import * as ExternalPlugin from "./.quartz/plugins";
-
-ExternalPlugin.Latex({
-  renderEngine: "katex",
-});
-```
-
-## Configuration
+## Configuration #TODO
 
 | Option           | Type                               | Default     | Description                            |
 | ---------------- | ---------------------------------- | ----------- | -------------------------------------- |
@@ -38,8 +40,10 @@ ExternalPlugin.Latex({
 | `mathJaxOptions` | `MathjaxOptions`                   | `undefined` | Options for the MathJax engine.        |
 | `typstOptions`   | `TypstOptions`                     | `undefined` | Options for the Typst engine.          |
 
-## Documentation
+- The tag-file registry is scanned on build, `quartz serve` has to be ren after adding/renaming files in `<importpath>/tags/`.
 
+## Documentation #TODO
+ 
 See the [Quartz documentation](https://quartz.jzhao.xyz/plugins/Latex) for more information.
 
 ## License
