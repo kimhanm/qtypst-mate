@@ -41,7 +41,7 @@ let compilerKey: string | undefined;
 const cache = new Map<string, RenderResult>();
 
 function getCompiler(opts: CompileOptions): NodeCompiler {
-    const key = JSON.strinify([opts.workspace, opts.fontPaths ?? []]);
+    const key = JSON.stringify([opts.workspace, opts.fontPaths ?? []]);
     if (!compiler || compilerKey !== key) {
         compiler = NodeCompiler.create({
             workspace: opts.workspace,

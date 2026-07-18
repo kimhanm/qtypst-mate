@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import default2 from 'path';
 import default3 from 'process';
 import { fileURLToPath } from 'url';
-import 'fs';
+import fs from 'fs';
 import { NodeCompiler } from '@myriaddreamin/typst-ts-node-compiler';
 
 createRequire(import.meta.url);
@@ -5923,11 +5923,11 @@ var FormattingElementList = class {
     const neTagName = this.treeAdapter.getTagName(newElement);
     const neNamespaceURI = this.treeAdapter.getNamespaceURI(newElement);
     for (let i = 0; i < this.entries.length; i++) {
-      const entry2 = this.entries[i];
-      if (entry2.type === EntryType.Marker) {
+      const entry = this.entries[i];
+      if (entry.type === EntryType.Marker) {
         break;
       }
-      const { element: element3 } = entry2;
+      const { element: element3 } = entry;
       if (this.treeAdapter.getTagName(element3) === neTagName && this.treeAdapter.getNamespaceURI(element3) === neNamespaceURI) {
         const elementAttrs = this.treeAdapter.getAttrList(element3);
         if (elementAttrs.length === neAttrsLength) {
@@ -5976,8 +5976,8 @@ var FormattingElementList = class {
       token
     });
   }
-  removeEntry(entry2) {
-    const entryIndex = this.entries.indexOf(entry2);
+  removeEntry(entry) {
+    const entryIndex = this.entries.indexOf(entry);
     if (entryIndex !== -1) {
       this.entries.splice(entryIndex, 1);
     }
@@ -5997,11 +5997,11 @@ var FormattingElementList = class {
   }
   //Search
   getElementEntryInScopeWithTagName(tagName) {
-    const entry2 = this.entries.find((entry3) => entry3.type === EntryType.Marker || this.treeAdapter.getTagName(entry3.element) === tagName);
-    return entry2 && entry2.type === EntryType.Element ? entry2 : null;
+    const entry = this.entries.find((entry2) => entry2.type === EntryType.Marker || this.treeAdapter.getTagName(entry2.element) === tagName);
+    return entry && entry.type === EntryType.Element ? entry : null;
   }
   getElementEntry(element3) {
-    return this.entries.find((entry2) => entry2.type === EntryType.Element && entry2.element === element3);
+    return this.entries.find((entry) => entry.type === EntryType.Element && entry.element === element3);
   }
 };
 
@@ -6926,12 +6926,12 @@ var Parser = class {
   _reconstructActiveFormattingElements() {
     const listLength = this.activeFormattingElements.entries.length;
     if (listLength) {
-      const endIndex = this.activeFormattingElements.entries.findIndex((entry2) => entry2.type === EntryType.Marker || this.openElements.contains(entry2.element));
+      const endIndex = this.activeFormattingElements.entries.findIndex((entry) => entry.type === EntryType.Marker || this.openElements.contains(entry.element));
       const unopenIdx = endIndex === -1 ? listLength - 1 : endIndex - 1;
       for (let i = unopenIdx; i >= 0; i--) {
-        const entry2 = this.activeFormattingElements.entries[i];
-        this._insertElement(entry2.token, this.treeAdapter.getNamespaceURI(entry2.element));
-        entry2.element = this.openElements.current;
+        const entry = this.activeFormattingElements.entries[i];
+        this._insertElement(entry.token, this.treeAdapter.getNamespaceURI(entry.element));
+        entry.element = this.openElements.current;
       }
     }
   }
@@ -11223,8 +11223,6 @@ function closedDialog(node) {
 
 // node_modules/katex/dist/katex.mjs
 var ParseError = class _ParseError extends Error {
-  // Error start position based on passed-in Token or ParseNode.
-  // Length of affected text based on passed-in Token or ParseNode.
   // The underlying error message without any context added.
   constructor(message, token) {
     var error = "KaTeX parse error: " + message;
@@ -11257,6 +11255,9 @@ var ParseError = class _ParseError extends Error {
     }
     super(error);
     this.name = "ParseError";
+    this.position = void 0;
+    this.length = void 0;
+    this.rawMessage = void 0;
     Object.setPrototypeOf(this, _ParseError.prototype);
     this.position = start;
     if (start != null && end != null) {
@@ -11400,16 +11401,11 @@ var SETTINGS_SCHEMA = {
     cli: false
   }
 };
-function getDefaultValue(schema) {
-  if ("default" in schema) {
-    return schema.default;
+function getImplicitDefault(type) {
+  if (typeof type !== "string") {
+    return type.enum[0];
   }
-  var type = schema.type;
-  var defaultType = Array.isArray(type) ? type[0] : type;
-  if (typeof defaultType !== "string") {
-    return defaultType.enum[0];
-  }
-  switch (defaultType) {
+  switch (type) {
     case "boolean":
       return false;
     case "string":
@@ -11418,18 +11414,46 @@ function getDefaultValue(schema) {
       return 0;
     case "object":
       return {};
+    default:
+      throw new Error("Unexpected schema type; settings must declare an explicit default.");
   }
+}
+function getDefaultValue(schema) {
+  if (schema.default !== void 0) {
+    return schema.default;
+  }
+  var type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
+  return getImplicitDefault(type);
+}
+function applySetting(target, prop, options, schema) {
+  var optionValue = options[prop];
+  target[prop] = optionValue !== void 0 ? schema.processor ? schema.processor(optionValue) : optionValue : getDefaultValue(schema);
 }
 var Settings = class {
   constructor(options) {
     if (options === void 0) {
       options = {};
     }
+    this.displayMode = void 0;
+    this.output = void 0;
+    this.leqno = void 0;
+    this.fleqn = void 0;
+    this.throwOnError = void 0;
+    this.errorColor = void 0;
+    this.macros = void 0;
+    this.minRuleThickness = void 0;
+    this.colorIsTextColor = void 0;
+    this.strict = void 0;
+    this.trust = void 0;
+    this.maxSize = void 0;
+    this.maxExpand = void 0;
+    this.globalGroup = void 0;
     options = options || {};
     for (var prop of Object.keys(SETTINGS_SCHEMA)) {
       var schema = SETTINGS_SCHEMA[prop];
-      var optionValue = options[prop];
-      this[prop] = optionValue !== void 0 ? schema.processor ? schema.processor(optionValue) : optionValue : getDefaultValue(schema);
+      if (schema) {
+        applySetting(this, prop, options, schema);
+      }
     }
   }
   /**
@@ -11502,6 +11526,9 @@ var Settings = class {
 };
 var Style = class {
   constructor(id, size, cramped) {
+    this.id = void 0;
+    this.size = void 0;
+    this.cramped = void 0;
     this.id = id;
     this.size = size;
     this.cramped = cramped;
@@ -11634,11 +11661,11 @@ var scriptData = [{
 }];
 function scriptFromCodepoint(codepoint) {
   for (var i = 0; i < scriptData.length; i++) {
-    var script = scriptData[i];
-    for (var _i = 0; _i < script.blocks.length; _i++) {
-      var block = script.blocks[_i];
+    var script2 = scriptData[i];
+    for (var _i = 0; _i < script2.blocks.length; _i++) {
+      var block = script2.blocks[_i];
       if (codepoint >= block[0] && codepoint <= block[1]) {
-        return script.name;
+        return script2.name;
       }
     }
   }
@@ -11812,7 +11839,7 @@ var path = {
 var tallDelim = function tallDelim2(label, midHeight) {
   switch (label) {
     case "lbrack":
-      return "M403 1759 V84 H666 V0 H319 V1759 v" + midHeight + " v1759 h347 v-84\nH403z M403 1759 V0 H319 V1759 v" + midHeight + " v1759 h84z";
+      return "M403 1759 V84 H666 V0 H319 V1759 v" + midHeight + " v1759 v84 h347 v-84\nH403z M403 1759 V0 H319 V1759 v" + midHeight + " v1759 v84 h84z";
     case "rbrack":
       return "M347 1759 V0 H0 V84 H263 V1759 v" + midHeight + " v1759 H0 v84 H347z\nM347 1759 V0 H263 V1759 v" + midHeight + " v1759 h84z";
     case "vert":
@@ -11835,9 +11862,18 @@ var tallDelim = function tallDelim2(label, midHeight) {
       throw new Error("Unknown stretchy delimiter.");
   }
 };
+function isMathDomNode(node) {
+  return "toText" in node;
+}
 var DocumentFragment = class {
   // Never used; needed for satisfying interface.
   constructor(children) {
+    this.children = void 0;
+    this.classes = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.maxFontSize = void 0;
+    this.style = void 0;
     this.children = children;
     this.classes = [];
     this.height = 0;
@@ -11869,8 +11905,12 @@ var DocumentFragment = class {
    * MathDomNode's only.
    */
   toText() {
-    var toText2 = (child) => child.toText();
-    return this.children.map(toText2).join("");
+    return this.children.map((child) => {
+      if (isMathDomNode(child)) {
+        return child.toText();
+      }
+      throw new Error("Expected MathDomNode with toText, got " + child.constructor.name);
+    }).join("");
   }
 };
 var ptPerUnit = {
@@ -11945,6 +11985,16 @@ var makeEm = function makeEm2(n) {
 var createClass = function createClass2(classes) {
   return classes.filter((cls) => cls).join(" ");
 };
+var cssStyleToString = function cssStyleToString2(style2) {
+  var styles2 = "";
+  for (var key of Object.keys(style2)) {
+    var value = style2[key];
+    if (value !== void 0) {
+      styles2 += hyphenate(key) + ":" + value + ";";
+    }
+  }
+  return styles2;
+};
 var initNode = function initNode2(classes, options, style2) {
   this.classes = classes || [];
   this.attributes = {};
@@ -11965,9 +12015,7 @@ var initNode = function initNode2(classes, options, style2) {
 var toNode = function toNode2(tagName) {
   var node = document.createElement(tagName);
   node.className = createClass(this.classes);
-  for (var key of Object.keys(this.style)) {
-    node.style[key] = this.style[key];
-  }
+  Object.assign(node.style, this.style);
   for (var attr of Object.keys(this.attributes)) {
     node.setAttribute(attr, this.attributes[attr]);
   }
@@ -11982,10 +12030,7 @@ var toMarkup = function toMarkup2(tagName) {
   if (this.classes.length) {
     markup += ' class="' + escape(createClass(this.classes)) + '"';
   }
-  var styles2 = "";
-  for (var key of Object.keys(this.style)) {
-    styles2 += hyphenate(key) + ":" + this.style[key] + ";";
-  }
+  var styles2 = cssStyleToString(this.style);
   if (styles2) {
     markup += ' style="' + escape(styles2) + '"';
   }
@@ -12004,6 +12049,15 @@ var toMarkup = function toMarkup2(tagName) {
 };
 var Span = class {
   constructor(classes, children, options, style2) {
+    this.children = void 0;
+    this.attributes = void 0;
+    this.classes = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.width = void 0;
+    this.maxFontSize = void 0;
+    this.style = void 0;
+    this.italic = void 0;
     initNode.call(this, classes, options, style2);
     this.children = children || [];
   }
@@ -12027,6 +12081,13 @@ var Span = class {
 };
 var Anchor = class {
   constructor(href, classes, children, options) {
+    this.children = void 0;
+    this.attributes = void 0;
+    this.classes = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.maxFontSize = void 0;
+    this.style = void 0;
     initNode.call(this, classes, options);
     this.children = children || [];
     this.setAttribute("href", href);
@@ -12046,6 +12107,13 @@ var Anchor = class {
 };
 var Img = class {
   constructor(src, alt, style2) {
+    this.src = void 0;
+    this.alt = void 0;
+    this.classes = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.maxFontSize = void 0;
+    this.style = void 0;
     this.alt = alt;
     this.src = src;
     this.classes = ["mord"];
@@ -12062,17 +12130,12 @@ var Img = class {
     node.src = this.src;
     node.alt = this.alt;
     node.className = "mord";
-    for (var key of Object.keys(this.style)) {
-      node.style[key] = this.style[key];
-    }
+    Object.assign(node.style, this.style);
     return node;
   }
   toMarkup() {
     var markup = '<img src="' + escape(this.src) + '"' + (' alt="' + escape(this.alt) + '"');
-    var styles2 = "";
-    for (var key of Object.keys(this.style)) {
-      styles2 += hyphenate(key) + ":" + this.style[key] + ";";
-    }
+    var styles2 = cssStyleToString(this.style);
     if (styles2) {
       markup += ' style="' + escape(styles2) + '"';
     }
@@ -12088,19 +12151,28 @@ var iCombinations = {
   "\xEC": "\u0131\u0300"
 };
 var SymbolNode = class {
-  constructor(text2, height, depth, italic, skew, width, classes, style2) {
+  constructor(text2, height, depth, italic2, skew, width, classes, style2) {
+    this.text = void 0;
+    this.height = void 0;
+    this.depth = void 0;
+    this.italic = void 0;
+    this.skew = void 0;
+    this.width = void 0;
+    this.maxFontSize = void 0;
+    this.classes = void 0;
+    this.style = void 0;
     this.text = text2;
     this.height = height || 0;
     this.depth = depth || 0;
-    this.italic = italic || 0;
+    this.italic = italic2 || 0;
     this.skew = skew || 0;
     this.width = width || 0;
     this.classes = classes || [];
     this.style = style2 || {};
     this.maxFontSize = 0;
-    var script = scriptFromCodepoint(this.text.charCodeAt(0));
-    if (script) {
-      this.classes.push(script + "_fallback");
+    var script2 = scriptFromCodepoint(this.text.charCodeAt(0));
+    if (script2) {
+      this.classes.push(script2 + "_fallback");
     }
     if (/[îïíì]/.test(this.text)) {
       this.text = iCombinations[this.text];
@@ -12124,9 +12196,9 @@ var SymbolNode = class {
       span = span || document.createElement("span");
       span.className = createClass(this.classes);
     }
-    for (var key of Object.keys(this.style)) {
+    if (Object.keys(this.style).length > 0) {
       span = span || document.createElement("span");
-      span.style[key] = this.style[key];
+      Object.assign(span.style, this.style);
     }
     if (span) {
       span.appendChild(node);
@@ -12151,9 +12223,7 @@ var SymbolNode = class {
     if (this.italic > 0) {
       styles2 += "margin-right:" + makeEm(this.italic) + ";";
     }
-    for (var key of Object.keys(this.style)) {
-      styles2 += hyphenate(key) + ":" + this.style[key] + ";";
-    }
+    styles2 += cssStyleToString(this.style);
     if (styles2) {
       needsSpan = true;
       markup += ' style="' + escape(styles2) + '"';
@@ -12171,6 +12241,8 @@ var SymbolNode = class {
 };
 var SvgNode = class {
   constructor(children, attributes) {
+    this.children = void 0;
+    this.attributes = void 0;
     this.children = children || [];
     this.attributes = attributes || {};
   }
@@ -12200,6 +12272,8 @@ var SvgNode = class {
 };
 var PathNode = class {
   constructor(pathName, alternate) {
+    this.pathName = void 0;
+    this.alternate = void 0;
     this.pathName = pathName;
     this.alternate = alternate;
   }
@@ -12223,6 +12297,7 @@ var PathNode = class {
 };
 var LineNode = class {
   constructor(attributes) {
+    this.attributes = void 0;
     this.attributes = attributes || {};
   }
   toNode() {
@@ -14539,21 +14614,6 @@ function getGlobalMetrics(size) {
   }
   return fontMetricsBySizeIndex[sizeIndex];
 }
-var ATOMS = {
-  "bin": 1,
-  "close": 1,
-  "inner": 1,
-  "open": 1,
-  "punct": 1,
-  "rel": 1
-};
-var NON_ATOMS = {
-  "accent-token": 1,
-  "mathord": 1,
-  "op-token": 1,
-  "spacing": 1,
-  "textord": 1
-};
 var symbols = {
   "math": {},
   "text": {}
@@ -15035,8 +15095,8 @@ defineSymbol(text, main, spacing, "\xA0", "\\ ");
 defineSymbol(text, main, spacing, "\xA0", " ");
 defineSymbol(text, main, spacing, "\xA0", "\\space");
 defineSymbol(text, main, spacing, "\xA0", "\\nobreakspace");
-defineSymbol(math, main, spacing, null, "\\nobreak");
-defineSymbol(math, main, spacing, null, "\\allowbreak");
+defineSymbol(math, main, spacing, "", "\\nobreak");
+defineSymbol(math, main, spacing, "", "\\allowbreak");
 defineSymbol(math, main, punct, ",", ",");
 defineSymbol(math, main, punct, ";", ";");
 defineSymbol(math, ams, bin, "\u22BC", "\\barwedge", true);
@@ -15221,7 +15281,7 @@ defineSymbol(math, ams, textord, "Z", "\u2124");
 defineSymbol(text, ams, textord, "Z", "\u2124");
 defineSymbol(math, main, mathord, "h", "\u210E");
 defineSymbol(text, main, mathord, "h", "\u210E");
-var wideChar = "";
+var wideChar;
 for (_i3 = 0; _i3 < letters.length; _i3++) {
   _ch3 = letters.charAt(_i3);
   wideChar = String.fromCharCode(55349, 56320 + _i3);
@@ -15290,90 +15350,136 @@ for (_i5 = 0; _i5 < extraLatin.length; _i5++) {
 }
 var _ch5;
 var _i5;
+var boldUpright = {
+  mathClass: "mathbf",
+  textClass: "textbf",
+  font: "Main-Bold"
+};
+var italic = {
+  mathClass: "mathnormal",
+  textClass: "textit",
+  font: "Math-Italic"
+};
+var boldItalic = {
+  mathClass: "boldsymbol",
+  textClass: "boldsymbol",
+  font: "Main-BoldItalic"
+};
+var script = {
+  mathClass: "mathscr",
+  textClass: "textscr",
+  font: "Script-Regular"
+};
+var noFont = {
+  mathClass: "",
+  textClass: "",
+  font: ""
+};
+var fraktur = {
+  mathClass: "mathfrak",
+  textClass: "textfrak",
+  font: "Fraktur-Regular"
+};
+var doubleStruck = {
+  mathClass: "mathbb",
+  textClass: "textbb",
+  font: "AMS-Regular"
+};
+var boldFraktur = {
+  mathClass: "mathboldfrak",
+  textClass: "textboldfrak",
+  font: "Fraktur-Regular"
+};
+var sansSerif = {
+  mathClass: "mathsf",
+  textClass: "textsf",
+  font: "SansSerif-Regular"
+};
+var boldSansSerif = {
+  mathClass: "mathboldsf",
+  textClass: "textboldsf",
+  font: "SansSerif-Bold"
+};
+var italicSansSerif = {
+  mathClass: "mathitsf",
+  textClass: "textitsf",
+  font: "SansSerif-Italic"
+};
+var monospace = {
+  mathClass: "mathtt",
+  textClass: "texttt",
+  font: "Typewriter-Regular"
+};
 var wideLatinLetterData = [
-  ["mathbf", "textbf", "Main-Bold"],
-  // A-Z bold upright
-  ["mathbf", "textbf", "Main-Bold"],
-  // a-z bold upright
-  ["mathnormal", "textit", "Math-Italic"],
-  // A-Z italic
-  ["mathnormal", "textit", "Math-Italic"],
-  // a-z italic
-  ["boldsymbol", "boldsymbol", "Main-BoldItalic"],
-  // A-Z bold italic
-  ["boldsymbol", "boldsymbol", "Main-BoldItalic"],
-  // a-z bold italic
+  boldUpright,
+  boldUpright,
+  // A-Z, a-z
+  italic,
+  italic,
+  // A-Z, a-z
+  boldItalic,
+  boldItalic,
+  // A-Z, a-z
   // Map fancy A-Z letters to script, not calligraphic.
   // This aligns with unicode-math and math fonts (except Cambria Math).
-  ["mathscr", "textscr", "Script-Regular"],
-  // A-Z script
-  ["", "", ""],
-  // a-z script.  No font
-  ["", "", ""],
-  // A-Z bold script. No font
-  ["", "", ""],
-  // a-z bold script. No font
-  ["mathfrak", "textfrak", "Fraktur-Regular"],
-  // A-Z Fraktur
-  ["mathfrak", "textfrak", "Fraktur-Regular"],
-  // a-z Fraktur
-  ["mathbb", "textbb", "AMS-Regular"],
-  // A-Z double-struck
-  ["mathbb", "textbb", "AMS-Regular"],
-  // k double-struck
+  script,
+  noFont,
+  // A-Z script, a-z — no font
+  noFont,
+  noFont,
+  // A-Z bold script, a-z bold script — no font
+  fraktur,
+  fraktur,
+  // A-Z, a-z
+  doubleStruck,
+  doubleStruck,
+  // A-Z double-struck, k double-struck
   // Note that we are using a bold font, but font metrics for regular Fraktur.
-  ["mathboldfrak", "textboldfrak", "Fraktur-Regular"],
-  // A-Z bold Fraktur
-  ["mathboldfrak", "textboldfrak", "Fraktur-Regular"],
-  // a-z bold Fraktur
-  ["mathsf", "textsf", "SansSerif-Regular"],
-  // A-Z sans-serif
-  ["mathsf", "textsf", "SansSerif-Regular"],
-  // a-z sans-serif
-  ["mathboldsf", "textboldsf", "SansSerif-Bold"],
-  // A-Z bold sans-serif
-  ["mathboldsf", "textboldsf", "SansSerif-Bold"],
-  // a-z bold sans-serif
-  ["mathitsf", "textitsf", "SansSerif-Italic"],
-  // A-Z italic sans-serif
-  ["mathitsf", "textitsf", "SansSerif-Italic"],
-  // a-z italic sans-serif
-  ["", "", ""],
-  // A-Z bold italic sans. No font
-  ["", "", ""],
-  // a-z bold italic sans. No font
-  ["mathtt", "texttt", "Typewriter-Regular"],
-  // A-Z monospace
-  ["mathtt", "texttt", "Typewriter-Regular"]
-  // a-z monospace
+  boldFraktur,
+  boldFraktur,
+  // A-Z, a-z
+  sansSerif,
+  sansSerif,
+  // A-Z, a-z
+  boldSansSerif,
+  boldSansSerif,
+  // A-Z, a-z
+  italicSansSerif,
+  italicSansSerif,
+  // A-Z, a-z
+  noFont,
+  noFont,
+  // A-Z bold italic sans, a-z bold italic sans - no font
+  monospace,
+  monospace
+  // A-Z, a-z
 ];
 var wideNumeralData = [
-  ["mathbf", "textbf", "Main-Bold"],
-  // 0-9 bold
-  ["", "", ""],
+  boldUpright,
+  // 0-9
+  noFont,
   // 0-9 double-struck. No KaTeX font.
-  ["mathsf", "textsf", "SansSerif-Regular"],
-  // 0-9 sans-serif
-  ["mathboldsf", "textboldsf", "SansSerif-Bold"],
-  // 0-9 bold sans-serif
-  ["mathtt", "texttt", "Typewriter-Regular"]
-  // 0-9 monospace
+  sansSerif,
+  // 0-9
+  boldSansSerif,
+  // 0-9
+  monospace
+  // 0-9
 ];
-var wideCharacterFont = (wideChar2, mode) => {
+var wideCharacterFont = (wideChar2) => {
   var H = wideChar2.charCodeAt(0);
   var L = wideChar2.charCodeAt(1);
   var codePoint = (H - 55296) * 1024 + (L - 56320) + 65536;
-  var j = mode === "math" ? 0 : 1;
   if (119808 <= codePoint && codePoint < 120484) {
     var i = Math.floor((codePoint - 119808) / 26);
-    return [wideLatinLetterData[i][2], wideLatinLetterData[i][j]];
+    return wideLatinLetterData[i];
   } else if (120782 <= codePoint && codePoint <= 120831) {
     var _i = Math.floor((codePoint - 120782) / 10);
-    return [wideNumeralData[_i][2], wideNumeralData[_i][j]];
+    return wideNumeralData[_i];
   } else if (codePoint === 120485 || codePoint === 120486) {
-    return [wideLatinLetterData[0][2], wideLatinLetterData[0][j]];
+    return wideLatinLetterData[0];
   } else if (120486 < codePoint && codePoint < 120782) {
-    return ["", ""];
+    return noFont;
   } else {
     throw new ParseError("Unsupported character: " + wideChar2);
   }
@@ -15396,11 +15502,11 @@ var makeSymbol = function makeSymbol2(value, fontName, mode, options, classes) {
   value = lookup.value;
   var symbolNode;
   if (metrics) {
-    var italic = metrics.italic;
+    var italic2 = metrics.italic;
     if (mode === "text" || options && options.font === "mathit") {
-      italic = 0;
+      italic2 = 0;
     }
-    symbolNode = new SymbolNode(value, metrics.height, metrics.depth, italic, metrics.skew, metrics.width, classes);
+    symbolNode = new SymbolNode(value, metrics.height, metrics.depth, italic2, metrics.skew, metrics.width, classes);
   } else {
     typeof console !== "undefined" && console.warn("No character metrics " + ("for '" + value + "' in style '" + fontName + "' and mode '" + mode + "'"));
     symbolNode = new SymbolNode(value, 0, 0, 0, 0, 0, classes);
@@ -15429,7 +15535,7 @@ var mathsym = function mathsym2(value, mode, options, classes) {
     return makeSymbol(value, "AMS-Regular", mode, options, classes.concat(["amsrm"]));
   }
 };
-var boldsymbol = function boldsymbol2(value, mode, options, classes, type) {
+var boldSymbol = function boldSymbol2(value, mode, type) {
   if (type !== "textord" && lookupSymbol(value, "Math-BoldItalic", mode).metrics) {
     return {
       fontName: "Math-BoldItalic",
@@ -15446,28 +15552,36 @@ var makeOrd = function makeOrd2(group, options, type) {
   var mode = group.mode;
   var text2 = group.text;
   var classes = ["mord"];
-  var isFont = mode === "math" || mode === "text" && options.font;
-  var fontOrFamily = isFont ? options.font : options.fontFamily;
+  var {
+    font,
+    fontFamily,
+    fontWeight,
+    fontShape
+  } = options;
+  var useFont = mode === "math" || mode === "text" && !!font;
+  var fontOrFamily = useFont ? font : fontFamily;
   var wideFontName = "";
   var wideFontClass = "";
   if (text2.charCodeAt(0) === 55349) {
-    [wideFontName, wideFontClass] = wideCharacterFont(text2, mode);
+    var wideCharData = wideCharacterFont(text2);
+    wideFontName = wideCharData.font;
+    wideFontClass = wideCharData[mode + "Class"];
   }
-  if (wideFontName.length > 0) {
+  if (wideFontName) {
     return makeSymbol(text2, wideFontName, mode, options, classes.concat(wideFontClass));
   } else if (fontOrFamily) {
     var fontName;
     var fontClasses;
     if (fontOrFamily === "boldsymbol") {
-      var fontData = boldsymbol(text2, mode, options, classes, type);
+      var fontData = boldSymbol(text2, mode, type);
       fontName = fontData.fontName;
       fontClasses = [fontData.fontClass];
-    } else if (isFont) {
-      fontName = fontMap[fontOrFamily].fontName;
-      fontClasses = [fontOrFamily];
+    } else if (useFont) {
+      fontName = fontMap[font].fontName;
+      fontClasses = [font];
     } else {
-      fontName = retrieveTextFontName(fontOrFamily, options.fontWeight, options.fontShape);
-      fontClasses = [fontOrFamily, options.fontWeight, options.fontShape];
+      fontName = retrieveTextFontName(fontFamily, fontWeight, fontShape);
+      fontClasses = [fontFamily, fontWeight, fontShape];
     }
     if (lookupSymbol(text2, fontName, mode).metrics) {
       return makeSymbol(text2, fontName, mode, options, classes.concat(fontClasses));
@@ -15482,16 +15596,16 @@ var makeOrd = function makeOrd2(group, options, type) {
   if (type === "mathord") {
     return makeSymbol(text2, "Math-Italic", mode, options, classes.concat(["mathnormal"]));
   } else if (type === "textord") {
-    var font = symbols[mode][text2] && symbols[mode][text2].font;
-    if (font === "ams") {
-      var _fontName = retrieveTextFontName("amsrm", options.fontWeight, options.fontShape);
-      return makeSymbol(text2, _fontName, mode, options, classes.concat("amsrm", options.fontWeight, options.fontShape));
-    } else if (font === "main" || !font) {
-      var _fontName2 = retrieveTextFontName("textrm", options.fontWeight, options.fontShape);
-      return makeSymbol(text2, _fontName2, mode, options, classes.concat(options.fontWeight, options.fontShape));
+    var _font = symbols[mode][text2] && symbols[mode][text2].font;
+    if (_font === "ams") {
+      var _fontName = retrieveTextFontName("amsrm", fontWeight, fontShape);
+      return makeSymbol(text2, _fontName, mode, options, classes.concat("amsrm", fontWeight, fontShape));
+    } else if (_font === "main" || !_font) {
+      var _fontName2 = retrieveTextFontName("textrm", fontWeight, fontShape);
+      return makeSymbol(text2, _fontName2, mode, options, classes.concat(fontWeight, fontShape));
     } else {
-      var _fontName3 = retrieveTextFontName(font, options.fontWeight, options.fontShape);
-      return makeSymbol(text2, _fontName3, mode, options, classes.concat(_fontName3, options.fontWeight, options.fontShape));
+      var _fontName3 = retrieveTextFontName(_font, fontWeight, fontShape);
+      return makeSymbol(text2, _fontName3, mode, options, classes.concat(_fontName3, fontWeight, fontShape));
     }
   } else {
     throw new Error("unexpected type: " + type + " in makeOrd");
@@ -15700,8 +15814,9 @@ var makeGlue = (measurement, options) => {
   rule.style.marginRight = makeEm(size);
   return rule;
 };
-var retrieveTextFontName = function retrieveTextFontName2(fontFamily, fontWeight, fontShape) {
-  var baseFontName = "";
+var retrieveTextFontName = (fontFamily, fontWeight, fontShape) => {
+  var baseFontName;
+  var fontStylesName;
   switch (fontFamily) {
     case "amsrm":
       baseFontName = "AMS";
@@ -15718,12 +15833,11 @@ var retrieveTextFontName = function retrieveTextFontName2(fontFamily, fontWeight
     default:
       baseFontName = fontFamily;
   }
-  var fontStylesName;
   if (fontWeight === "textbf" && fontShape === "textit") {
     fontStylesName = "BoldItalic";
   } else if (fontWeight === "textbf") {
     fontStylesName = "Bold";
-  } else if (fontWeight === "textit") {
+  } else if (fontShape === "textit") {
     fontStylesName = "Italic";
   } else {
     fontStylesName = "Regular";
@@ -16190,6 +16304,10 @@ function newDocumentFragment(children) {
 }
 var MathNode = class {
   constructor(type, children, classes) {
+    this.type = void 0;
+    this.attributes = void 0;
+    this.children = void 0;
+    this.classes = void 0;
     this.type = type;
     this.attributes = {};
     this.children = children || [];
@@ -16265,6 +16383,7 @@ var MathNode = class {
 };
 var TextNode = class {
   constructor(text2) {
+    this.text = void 0;
     this.text = text2;
   }
   /**
@@ -16293,6 +16412,8 @@ var SpaceNode = class {
    * Create a Space node with width given in CSS ems.
    */
   constructor(width) {
+    this.width = void 0;
+    this.character = void 0;
     this.width = width;
     if (width >= 0.05555 && width <= 0.05556) {
       this.character = "\u200A";
@@ -16362,49 +16483,48 @@ var makeRow = function makeRow2(body) {
     return new MathNode("mrow", body);
   }
 };
-var getVariant = function getVariant2(group, options) {
-  if (options.fontFamily === "texttt") {
-    return "monospace";
-  } else if (options.fontFamily === "textsf") {
-    if (options.fontShape === "textit" && options.fontWeight === "textbf") {
-      return "sans-serif-bold-italic";
+var mathFontVariants = {
+  mathit: "italic",
+  boldsymbol: (group) => group.type === "textord" ? "bold" : "bold-italic",
+  mathbf: "bold",
+  mathbb: "double-struck",
+  mathsfit: "sans-serif-italic",
+  mathfrak: "fraktur",
+  mathscr: "script",
+  mathcal: "script",
+  mathsf: "sans-serif",
+  mathtt: "monospace"
+};
+var getVariant = (group, options) => {
+  if (group.mode === "text") {
+    if (options.fontFamily === "texttt") {
+      return "monospace";
+    } else if (options.fontFamily === "textsf") {
+      if (options.fontShape === "textit" && options.fontWeight === "textbf") {
+        return "sans-serif-bold-italic";
+      } else if (options.fontShape === "textit") {
+        return "sans-serif-italic";
+      } else if (options.fontWeight === "textbf") {
+        return "bold-sans-serif";
+      } else {
+        return "sans-serif";
+      }
+    } else if (options.fontShape === "textit" && options.fontWeight === "textbf") {
+      return "bold-italic";
     } else if (options.fontShape === "textit") {
-      return "sans-serif-italic";
+      return "italic";
     } else if (options.fontWeight === "textbf") {
-      return "bold-sans-serif";
-    } else {
-      return "sans-serif";
+      return "bold";
     }
-  } else if (options.fontShape === "textit" && options.fontWeight === "textbf") {
-    return "bold-italic";
-  } else if (options.fontShape === "textit") {
-    return "italic";
-  } else if (options.fontWeight === "textbf") {
-    return "bold";
   }
   var font = options.font;
   if (!font || font === "mathnormal") {
     return null;
   }
   var mode = group.mode;
-  if (font === "mathit") {
-    return "italic";
-  } else if (font === "boldsymbol") {
-    return group.type === "textord" ? "bold" : "bold-italic";
-  } else if (font === "mathbf") {
-    return "bold";
-  } else if (font === "mathbb") {
-    return "double-struck";
-  } else if (font === "mathsfit") {
-    return "sans-serif-italic";
-  } else if (font === "mathfrak") {
-    return "fraktur";
-  } else if (font === "mathscr" || font === "mathcal") {
-    return "script";
-  } else if (font === "mathsf") {
-    return "sans-serif";
-  } else if (font === "mathtt") {
-    return "monospace";
+  var mathVariant = mathFontVariants[font];
+  if (mathVariant) {
+    return typeof mathVariant === "function" ? mathVariant(group) : mathVariant;
   }
   var text2 = group.text;
   if (noVariantSymbols.has(text2)) {
@@ -16492,8 +16612,7 @@ var buildGroup2 = function buildGroup3(group, options) {
     return new MathNode("mrow");
   }
   if (_mathmlGroupBuilders[group.type]) {
-    var result = _mathmlGroupBuilders[group.type](group, options);
-    return result;
+    return _mathmlGroupBuilders[group.type](group, options);
   } else {
     throw new ParseError("Got group of unknown type: '" + group.type + "'");
   }
@@ -16563,6 +16682,19 @@ var sizeAtStyle = function sizeAtStyle2(size, style2) {
 };
 var Options = class _Options {
   constructor(data) {
+    this.style = void 0;
+    this.color = void 0;
+    this.size = void 0;
+    this.textSize = void 0;
+    this.phantom = void 0;
+    this.font = void 0;
+    this.fontFamily = void 0;
+    this.fontWeight = void 0;
+    this.fontShape = void 0;
+    this.sizeMultiplier = void 0;
+    this.maxSize = void 0;
+    this.minRuleThickness = void 0;
+    this._fontMetrics = void 0;
     this.style = data.style;
     this.color = data.color;
     this.size = data.size || _Options.BASESIZE;
@@ -16918,9 +17050,8 @@ var stretchySvg = function stretchySvg2(group, options) {
   function buildSvgSpan_() {
     var viewBoxWidth = 4e5;
     var label = group.label.slice(1);
-    if (wideAccentLabels.has(label)) {
-      var grp = group;
-      var numChars = grp.base.type === "ordgroup" ? grp.base.body.length : 1;
+    if (wideAccentLabels.has(label) && "base" in group) {
+      var numChars = group.base.type === "ordgroup" ? group.base.body.length : 1;
       var viewBoxHeight;
       var pathName;
       var _height;
@@ -16965,15 +17096,20 @@ var stretchySvg = function stretchySvg2(group, options) {
     } else {
       var spans = [];
       var data = katexImagesData[label];
+      if (!data) {
+        throw new Error('No SVG data for "' + label + '".');
+      }
       var [paths, _minWidth, _viewBoxHeight] = data;
       var _height2 = _viewBoxHeight / 1e3;
       var numSvgChildren = paths.length;
       var widthClasses;
       var aligns;
       if (numSvgChildren === 1) {
-        var align1 = data[3];
+        if (data.length !== 4) {
+          throw new Error('Expected 4-tuple for single-path SVG data "' + label + '".');
+        }
         widthClasses = ["hide-tail"];
-        aligns = [align1];
+        aligns = [data[3]];
       } else if (numSvgChildren === 2) {
         widthClasses = ["halfarrow-left", "halfarrow-right"];
         aligns = ["xMinYMin", "xMaxYMin"];
@@ -17063,6 +17199,24 @@ var stretchyEnclose = function stretchyEnclose2(inner2, label, topPad, bottomPad
   img.style.height = makeEm(totalHeight);
   return img;
 };
+var ATOMS = {
+  "bin": 1,
+  "close": 1,
+  "inner": 1,
+  "open": 1,
+  "punct": 1,
+  "rel": 1
+};
+var NON_ATOMS = {
+  "accent-token": 1,
+  "mathord": 1,
+  "op-token": 1,
+  "spacing": 1,
+  "textord": 1
+};
+function isAtom(value) {
+  return value in ATOMS;
+}
 function assertNodeType(node, type) {
   if (!node || node.type !== type) {
     throw new Error("Expected node of type " + type + ", but got " + (node ? "node of type " + node.type : String(node)));
@@ -17377,7 +17531,8 @@ defineFunction({
         }, {
           type: "elem",
           elem: arrowBody,
-          shift: arrowShift
+          shift: arrowShift,
+          wrapperClasses: ["svg-align"]
         }, {
           type: "elem",
           elem: lowerGroup,
@@ -17394,11 +17549,11 @@ defineFunction({
         }, {
           type: "elem",
           elem: arrowBody,
-          shift: arrowShift
+          shift: arrowShift,
+          wrapperClasses: ["svg-align"]
         }]
       });
     }
-    vlist.children[0].children[0].children[1].classes.push("svg-align");
     return makeSpan(["mrel", "x-arrow"], [vlist], options);
   },
   mathmlBuilder(group, options) {
@@ -17606,7 +17761,8 @@ var newCell = () => {
     type: "styling",
     body: [],
     mode: "math",
-    style: "display"
+    style: "display",
+    resetFont: true
   };
 };
 var isStartOfArrow = (node) => {
@@ -17728,8 +17884,9 @@ function parseCD(parser) {
           type: "styling",
           body: [arrow],
           mode: "math",
-          style: "display"
+          style: "display",
           // CD is always displaystyle.
+          resetFont: true
         };
         row2.push(wrappedArrow);
         cell2 = newCell();
@@ -18452,9 +18609,9 @@ var makeSqrtImage = function makeSqrtImage2(height, options) {
   var sizeMultiplier = newOptions.sizeMultiplier;
   var extraVinculum = Math.max(0, options.minRuleThickness - options.fontMetrics().sqrtRuleThickness);
   var span;
-  var spanHeight = 0;
-  var texHeight = 0;
-  var viewBoxHeight = 0;
+  var spanHeight;
+  var texHeight;
+  var viewBoxHeight;
   var advanceWidth;
   if (delim.type === "small") {
     viewBoxHeight = 1e3 + 1e3 * extraVinculum + vbPad;
@@ -18712,6 +18869,9 @@ var delimiterSizes = {
   }
 };
 var delimiters = /* @__PURE__ */ new Set(["(", "\\lparen", ")", "\\rparen", "[", "\\lbrack", "]", "\\rbrack", "\\{", "\\lbrace", "\\}", "\\rbrace", "\\lfloor", "\\rfloor", "\u230A", "\u230B", "\\lceil", "\\rceil", "\u2308", "\u2309", "<", ">", "\\langle", "\u27E8", "\\rangle", "\u27E9", "\\lt", "\\gt", "\\lvert", "\\rvert", "\\lVert", "\\rVert", "\\lgroup", "\\rgroup", "\u27EE", "\u27EF", "\\lmoustache", "\\rmoustache", "\u23B0", "\u23B1", "/", "\\backslash", "|", "\\vert", "\\|", "\\Vert", "\\uparrow", "\\Uparrow", "\\downarrow", "\\Downarrow", "\\updownarrow", "\\Updownarrow", "."]);
+function isMiddleDelimNode(node) {
+  return "isMiddle" in node;
+}
 function checkDelimiter(delim, context) {
   var symDelim = checkSymbolNodeType(delim);
   if (symDelim && delimiters.has(symDelim.text)) {
@@ -18820,7 +18980,8 @@ defineFunction({
     var innerDepth = 0;
     var hadMiddle = false;
     for (var i = 0; i < inner2.length; i++) {
-      if (inner2[i].isMiddle) {
+      var node = inner2[i];
+      if (isMiddleDelimNode(node)) {
         hadMiddle = true;
       } else {
         innerHeight = Math.max(inner2[i].height, innerHeight);
@@ -18839,8 +19000,8 @@ defineFunction({
     if (hadMiddle) {
       for (var _i = 1; _i < inner2.length; _i++) {
         var middleDelim = inner2[_i];
-        var isMiddle = middleDelim.isMiddle;
-        if (isMiddle) {
+        if (isMiddleDelimNode(middleDelim)) {
+          var isMiddle = middleDelim.isMiddle;
           inner2[_i] = makeLeftRightDelim(isMiddle.delim, innerHeight, innerDepth, isMiddle.options, group.mode, []);
         }
       }
@@ -18898,11 +19059,10 @@ defineFunction({
       middleDelim = makeNullDelimiter(options, []);
     } else {
       middleDelim = makeSizedDelim(group.delim, 1, options, group.mode, []);
-      var isMiddle = {
+      middleDelim.isMiddle = {
         delim: group.delim,
         options
       };
-      middleDelim.isMiddle = isMiddle;
     }
     return middleDelim;
   },
@@ -18920,7 +19080,7 @@ var htmlBuilder$7 = (group, options) => {
   var label = group.label.slice(1);
   var scale = options.sizeMultiplier;
   var img;
-  var imgShift = 0;
+  var imgShift;
   var isSingleChar = isCharacterBox(group.body);
   if (label === "sout") {
     img = makeSpan(["stretchy", "sout"]);
@@ -18960,8 +19120,8 @@ var htmlBuilder$7 = (group, options) => {
     } else {
       inner2.classes.push("boxpad");
     }
-    var topPad = 0;
-    var bottomPad = 0;
+    var topPad;
+    var bottomPad;
     var ruleThickness = 0;
     if (/box/.test(label)) {
       ruleThickness = Math.max(
@@ -19044,7 +19204,7 @@ var htmlBuilder$7 = (group, options) => {
   }
 };
 var mathmlBuilder$6 = (group, options) => {
-  var fboxsep = 0;
+  var fboxsep;
   var node = new MathNode(group.label.includes("colorbox") ? "mpadded" : "menclose", [buildGroup2(group.body, options)]);
   switch (group.label) {
     case "\\cancel":
@@ -19096,7 +19256,7 @@ defineFunction({
   props: {
     numArgs: 2,
     allowedInText: true,
-    argTypes: ["color", "text"]
+    argTypes: ["color", "hbox"]
   },
   handler(_ref, args, optArgs) {
     var {
@@ -19122,7 +19282,7 @@ defineFunction({
   props: {
     numArgs: 3,
     allowedInText: true,
-    argTypes: ["color", "color", "text"]
+    argTypes: ["color", "color", "hbox"]
   },
   handler(_ref2, args, optArgs) {
     var {
@@ -19264,11 +19424,11 @@ function defineMacro(name, body) {
   _macros[name] = body;
 }
 var SourceLocation = class _SourceLocation {
-  // The + prefix indicates that these fields aren't writeable
-  // Lexer holding the input string.
-  // Start offset, zero-based inclusive.
   // End offset, zero-based exclusive.
   constructor(lexer, start, end) {
+    this.lexer = void 0;
+    this.start = void 0;
+    this.end = void 0;
     this.lexer = lexer;
     this.start = start;
     this.end = end;
@@ -19292,9 +19452,12 @@ var SourceLocation = class _SourceLocation {
   }
 };
 var Token = class _Token {
-  // don't expand the token
   // used in \noexpand
   constructor(text2, loc) {
+    this.text = void 0;
+    this.loc = void 0;
+    this.noexpand = void 0;
+    this.treatAsRelax = void 0;
     this.text = text2;
     this.loc = loc;
   }
@@ -19400,6 +19563,7 @@ function parseArray(parser, _ref, style2) {
         type: "styling",
         mode: parser.mode,
         style: style2,
+        resetFont: true,
         body: [cell2]
       };
     }
@@ -19510,7 +19674,12 @@ var htmlBuilder$6 = function htmlBuilder(group, options) {
     if (nc < inrow.length) {
       nc = inrow.length;
     }
-    var outrow = new Array(inrow.length);
+    var outrow = {
+      cells: new Array(inrow.length),
+      height: 0,
+      depth: 0,
+      pos: 0
+    };
     for (c = 0; c < inrow.length; ++c) {
       var elt = buildGroup$1(inrow[c], options);
       if (depth < elt.depth) {
@@ -19519,7 +19688,7 @@ var htmlBuilder$6 = function htmlBuilder(group, options) {
       if (height < elt.height) {
         height = elt.height;
       }
-      outrow[c] = elt;
+      outrow.cells[c] = elt;
     }
     var rowGap = group.rowGaps[r];
     var gap = 0;
@@ -19624,7 +19793,7 @@ var htmlBuilder$6 = function htmlBuilder(group, options) {
     var colElems = [];
     for (r = 0; r < nr; ++r) {
       var row2 = body[r];
-      var elem = row2[c];
+      var elem = row2.cells[c];
       if (!elem) {
         continue;
       }
@@ -20217,8 +20386,7 @@ var mathmlBuilder$4 = (group, options) => {
 var fontAliases = {
   "\\Bbb": "\\mathbb",
   "\\bold": "\\mathbf",
-  "\\frak": "\\mathfrak",
-  "\\bm": "\\boldsymbol"
+  "\\frak": "\\mathfrak"
 };
 defineFunction({
   type: "font",
@@ -20307,11 +20475,10 @@ defineFunction({
       mode
     } = parser;
     var body = parser.parseExpression(true, breakOnTokenText);
-    var style2 = "math" + funcName.slice(1);
     return {
       type: "font",
       mode,
-      font: style2,
+      font: "math" + funcName.slice(1),
       body: {
         type: "ordgroup",
         mode: parser.mode,
@@ -20746,17 +20913,18 @@ var htmlBuilder$3 = (grp, options) => {
         size: 0.1
       }, {
         type: "elem",
-        elem: braceBody
+        elem: braceBody,
+        wrapperClasses: ["svg-align"]
       }]
     });
-    vlist.children[0].children[0].children[1].classes.push("svg-align");
   } else {
     vlist = makeVList({
       positionType: "bottom",
       positionData: body.depth + 0.1 + braceBody.height,
       children: [{
         type: "elem",
-        elem: braceBody
+        elem: braceBody,
+        wrapperClasses: ["svg-align"]
       }, {
         type: "kern",
         size: 0.1
@@ -20765,7 +20933,6 @@ var htmlBuilder$3 = (grp, options) => {
         elem: body
       }]
     });
-    vlist.children[0].children[0].children[0].classes.push("svg-align");
   }
   if (supSubGroup) {
     var vSpan = makeSpan(["minner", group.isOver ? "mover" : "munder"], [vlist], options);
@@ -20933,11 +21100,11 @@ defineFunction({
     };
   },
   htmlBuilder(group, options) {
-    var elements = buildExpression$1(group.body, options, false);
+    var elements = buildExpression$1(group.body, options.withFont(""), false);
     return makeFragment(elements);
   },
   mathmlBuilder(group, options) {
-    return new MathNode("mrow", buildExpression2(group.body, options));
+    return new MathNode("mrow", buildExpression2(group.body, options.withFont("")));
   }
 });
 defineFunction({
@@ -21314,6 +21481,7 @@ defineFunction({
       type: "styling",
       mode: parser.mode,
       style: "text",
+      resetFont: true,
       body
     };
   }
@@ -21496,6 +21664,7 @@ var htmlBuilder$2 = (grp, options) => {
     large = true;
   }
   var base2;
+  var symbolItalic;
   if (group.symbol) {
     var fontName = large ? "Size2-Regular" : "Size1-Regular";
     var stash = "";
@@ -21504,8 +21673,8 @@ var htmlBuilder$2 = (grp, options) => {
       group.name = stash === "oiint" ? "\\iint" : "\\iiint";
     }
     base2 = makeSymbol(group.name, fontName, "math", options, ["mop", "op-symbol", large ? "large-op" : "small-op"]);
+    symbolItalic = base2.italic;
     if (stash.length > 0) {
-      var italic = base2.italic;
       var oval = staticSvg(stash + "Size" + (large ? "2" : "1"), options);
       base2 = makeVList({
         positionType: "individualShift",
@@ -21521,7 +21690,7 @@ var htmlBuilder$2 = (grp, options) => {
       });
       group.name = "\\" + stash;
       base2.classes.unshift("mop");
-      base2.italic = italic;
+      base2.italic = symbolItalic;
     }
   } else if (group.body) {
     var inner2 = buildExpression$1(group.body, options, true);
@@ -21541,8 +21710,9 @@ var htmlBuilder$2 = (grp, options) => {
   var baseShift = 0;
   var slant = 0;
   if ((base2 instanceof SymbolNode || group.name === "\\oiint" || group.name === "\\oiiint") && !group.suppressBaseShift) {
+    var _base$italic;
     baseShift = (base2.height - base2.depth) / 2 - options.fontMetrics().axisHeight;
-    slant = base2.italic || 0;
+    slant = (_base$italic = base2.italic) != null ? _base$italic : 0;
   }
   if (hasLimits) {
     return assembleSupSub(base2, supGroup, subGroup, options, style2, slant, baseShift);
@@ -22135,7 +22305,7 @@ defineFunction({
     var smashDepth = false;
     var tbArg = optArgs[0] && assertNodeType(optArgs[0], "ordgroup");
     if (tbArg) {
-      var letter = "";
+      var letter;
       for (var i = 0; i < tbArg.body.length; ++i) {
         var node = tbArg.body[i];
         letter = assertSymbolNodeType(node).text;
@@ -22300,6 +22470,9 @@ var styleMap = {
   "script": Style$1.SCRIPT,
   "scriptscript": Style$1.SCRIPTSCRIPT
 };
+function isStyleStr(s2) {
+  return s2 in styleMap;
+}
 defineFunction({
   type: "styling",
   names: ["\\displaystyle", "\\textstyle", "\\scriptstyle", "\\scriptscriptstyle"],
@@ -22316,6 +22489,9 @@ defineFunction({
     } = _ref;
     var body = parser.parseExpression(true, breakOnTokenText);
     var style2 = funcName.slice(1, funcName.length - 5);
+    if (!isStyleStr(style2)) {
+      throw new Error("Unknown style: " + style2);
+    }
     return {
       type: "styling",
       mode: parser.mode,
@@ -22327,12 +22503,18 @@ defineFunction({
   },
   htmlBuilder(group, options) {
     var newStyle = styleMap[group.style];
-    var newOptions = options.havingStyle(newStyle).withFont("");
+    var newOptions = options.havingStyle(newStyle);
+    if (group.resetFont) {
+      newOptions = newOptions.withFont("");
+    }
     return sizingGroup(group.body, newOptions, options);
   },
   mathmlBuilder(group, options) {
     var newStyle = styleMap[group.style];
     var newOptions = options.havingStyle(newStyle);
+    if (group.resetFont) {
+      newOptions = newOptions.withFont("");
+    }
     var inner2 = buildExpression2(group.body, newOptions);
     var node = new MathNode("mstyle", inner2);
     var styleAttributes = {
@@ -22413,7 +22595,8 @@ defineFunctionBuilders({
     if (subm) {
       var isOiint = group.base && group.base.type === "op" && group.base.name && (group.base.name === "\\oiint" || group.base.name === "\\oiiint");
       if (base2 instanceof SymbolNode || isOiint) {
-        marginLeft = makeEm(-base2.italic);
+        var _base$italic;
+        marginLeft = makeEm(-((_base$italic = base2.italic) != null ? _base$italic : 0));
       }
     }
     var supsub;
@@ -22860,9 +23043,11 @@ var tokenRegexString = "(" + spaceRegexString + "+)|" + // whitespace
 ("|" + controlWordWhitespaceRegexString) + // \macroName + spaces
 ("|" + controlSymbolRegexString + ")");
 var Lexer = class {
-  // Category codes. The lexer only supports comment characters (14) for now.
-  // MacroExpander additionally distinguishes active (13).
   constructor(input, settings) {
+    this.input = void 0;
+    this.settings = void 0;
+    this.tokenRegex = void 0;
+    this.catcodes = void 0;
     this.input = input;
     this.settings = settings;
     this.tokenRegex = new RegExp(tokenRegexString, "g");
@@ -22917,6 +23102,9 @@ var Namespace = class {
     if (globalMacros === void 0) {
       globalMacros = {};
     }
+    this.current = void 0;
+    this.builtins = void 0;
+    this.undefStack = void 0;
     this.current = globalMacros;
     this.builtins = builtins;
     this.undefStack = [];
@@ -23683,6 +23871,12 @@ var implicitCommands = {
 };
 var MacroExpander = class {
   constructor(input, settings, mode) {
+    this.settings = void 0;
+    this.expansionCount = void 0;
+    this.lexer = void 0;
+    this.macros = void 0;
+    this.stack = void 0;
+    this.mode = void 0;
     this.settings = settings;
     this.expansionCount = 0;
     this.feed(input);
@@ -24555,6 +24749,11 @@ var unicodeSymbols = {
 };
 var Parser2 = class _Parser {
   constructor(input, settings) {
+    this.mode = void 0;
+    this.gullet = void 0;
+    this.settings = void 0;
+    this.leftrightDepth = void 0;
+    this.nextToken = void 0;
     this.mode = "math";
     this.gullet = new MacroExpander(input, settings, this.mode);
     this.settings = settings;
@@ -24976,8 +25175,9 @@ var Parser2 = class _Parser {
           type: "styling",
           mode: group.mode,
           body: [group],
-          style: "text"
+          style: "text",
           // simulate \textstyle
+          resetFont: true
         } : null;
       }
       case "raw": {
@@ -25300,12 +25500,11 @@ var Parser2 = class _Parser {
       var group = symbols[this.mode][text2].group;
       var loc = SourceLocation.range(nucleus);
       var s2;
-      if (ATOMS.hasOwnProperty(group)) {
-        var family = group;
+      if (isAtom(group)) {
         s2 = {
           type: "atom",
           mode: this.mode,
-          family,
+          family: group,
           loc,
           text: text2
         };
@@ -25353,7 +25552,6 @@ var Parser2 = class _Parser {
           label: command,
           isStretchy: false,
           isShifty: true,
-          // TODO(ts)
           base: symbol
         };
       }
@@ -25432,7 +25630,7 @@ var renderToHTMLTree = function renderToHTMLTree2(expression, options) {
     return renderError(error, expression, settings);
   }
 };
-var version = "0.16.45";
+var version = "0.16.47";
 var __domTree = {
   Span,
   Anchor,
@@ -26137,9 +26335,12 @@ function scanTagFiles(contentDir, importPath) {
     for (const file of fs.readdirSync(tagsDir)) {
       if (!file.endsWith(".typ")) continue;
       const tag = slugTag(file.slice(0, -4).replaceAll(".", "/"));
-      tagFiles.set(tag, entry);
+      tagFiles.set(tag, file);
     }
   }
+  const registry = { tagFiles };
+  registryCache.set(cacheKey, registry);
+  return registry;
 }
 function expandTags(tags) {
   const expanded = /* @__PURE__ */ new Set();
@@ -26184,7 +26385,7 @@ var compiler;
 var compilerKey;
 var cache = /* @__PURE__ */ new Map();
 function getCompiler(opts) {
-  const key = JSON.strinify([opts.workspace, opts.fontPaths ?? []]);
+  const key = JSON.stringify([opts.workspace, opts.fontPaths ?? []]);
   if (!compiler || compilerKey !== key) {
     compiler = NodeCompiler.create({
       workspace: opts.workspace,
@@ -26228,7 +26429,7 @@ function resolveMathEngine(noteEngine, defaultEngine) {
   return defaultEngine;
 }
 var DEFAULT_PREAMBLE = [
-  "#set page(margin: 0pt, wigth: auto, height: auto)",
+  "#set page(margin: 0pt, width: auto, height: auto)",
   "#show raw: set text(size: 1.25em)",
   "#set text(size: fontsize)"
 ].join("\n");

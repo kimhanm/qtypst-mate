@@ -1,5 +1,4 @@
-
-import ts from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import { slug as slugAnchor } from "github-slugger";
 
@@ -19,7 +18,6 @@ function slugTag(tag: string): string {
     .join("/");
 }
 
-/* OMFG I hate typescript's `const` */
 const registryCache = new Map<string, TagFileRegistry>();
 
 /**
@@ -36,9 +34,12 @@ export function scanTagFiles(contentDir: string, importPath: string): TagFileReg
         for (const file of fs.readdirSync(tagsDir)) {
             if (!file.endsWith(".typ")) continue;
             const tag = slugTag(file.slice(0, -4).replaceAll(".", "/"));
-            tagFiles.set(tag, entry);
+            tagFiles.set(tag, file);
         }
     }
+    const registry = { tagFiles };
+    registryCache.set(cacheKey, registry);
+    return registry;
 }
 
 /** `foo/bar` should match both `foo` and `foo/bar` */

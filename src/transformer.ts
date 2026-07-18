@@ -50,7 +50,7 @@ export function resolveMathEngine(
 }
 
 export const DEFAULT_PREAMBLE = [
-    "#set page(margin: 0pt, wigth: auto, height: auto)",
+    "#set page(margin: 0pt, width: auto, height: auto)",
     "#show raw: set text(size: 1.25em)",
     "#set text(size: fontsize)",
 ].join("\n");
