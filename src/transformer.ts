@@ -65,7 +65,7 @@ const defaultOptions: QTypstMateOptions = {
     defaultMathEngine: "typst",
 };
 
-const QTYPSTMATE_CSS = `
+const TYPSTMATE_CSS = `
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
 figure.typtmate-codeblock { margin: 1rem 0; overflow-x: auto; }
@@ -97,7 +97,7 @@ export const QTypstMate: QuartzTransformerPlugin<Partial<QTypstMateOptions>> = (
         return {
           css: [
               { content: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" },
-              { content: QTYPSTMATE_CSS, inline: true },
+              { content: TYPSTMATE_CSS, inline: true },
           ],
         };
     },
@@ -288,8 +288,8 @@ function renderTypst(
         }
     }
 
-    const classNames = [`qtypstmate-${kind}`, `qtypstmate-style-${processor.styling}`];
-    if (processor.id.length > 0) classNames.push(`qtypstmate-id-${processor.id}`);
+    const classNames = [`typstmate-${kind}`, `typstmate-style-${processor.styling}`];
+    if (processor.id.length > 0) classNames.push(`typstmate-id-${processor.id}`);
 
     return [
         {

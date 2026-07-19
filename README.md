@@ -1,5 +1,5 @@
 # quartz plugin qtypst-mate
-Typst rendering [Quartz](https://quartz.jzhao.xzy) plugin compatible with the Obsidian plugin [typst-mate](https://github.com/azyarashi/obsidian-typst-mate).
+Typst rendering [Quartz](https://quartz.jzhao.xzy) plugin compatible with the Obsidian plugin [typst-mate](https://github.com/azyarashi/obsidian-typst-mate). Scaffolding forked from [quartz-community/latex](https://github.com/quartz-community/latex).
 Math and typst blocks are rendered to SVG at build-time.
 
 
@@ -14,37 +14,21 @@ Will hopefully be added to `@quartz-community/qtypst-mate`
 - download packges from [Typst Universe](https://typst.app/universe/) (`@preview`) 
 
 
-
 ## Installation
-Disable the `latex` plugin.
-```bash
-npx quartz plugin add #TODO
-```
-
-
+1. Disable the `latex` plugin
 ```yaml title="quartz.config.yaml"
 plugins:
-  - source: #TODO
-    enabled: true
-    options:
-      renderEngine: katex
+# ...
+  - source: github:quartz-community/latex
+    enabled: false
+```
+2. Add the plugin (TODO: update to `@quartz-community` once it's added there)
+```bash
+npx quartz plugin add github:kimhanm/qtypst-mate
 ```
 
-## Configuration #TODO
-
-| Option           | Type                               | Default     | Description                            |
-| ---------------- | ---------------------------------- | ----------- | -------------------------------------- |
-| `renderEngine`   | `"katex" \| "mathjax" \| "typst"`  | `"katex"`   | The rendering engine to use for LaTeX. |
-| `customMacros`   | `Record<string, string \| Args[]>` | `{}`        | Custom LaTeX macros.                   |
-| `katexOptions`   | `KatexOptions`                     | `undefined` | Options for the KaTeX engine.          |
-| `mathJaxOptions` | `MathjaxOptions`                   | `undefined` | Options for the MathJax engine.        |
-| `typstOptions`   | `TypstOptions`                     | `undefined` | Options for the Typst engine.          |
-
-- The tag-file registry is scanned on build, `quartz serve` has to be ren after adding/renaming files in `<importpath>/tags/`.
-
-## Documentation #TODO
- 
-See the [Quartz documentation](https://quartz.jzhao.xyz/plugins/Latex) for more information.
+## Documenta
+See the [Quartz documentation](https://quartz.jzhao.xyz/plugins/Latex) for more information, as well as the documentation for [typst-mate](https://github.com/azyarashi/obsidian-typst-mate).
 
 ## License
 

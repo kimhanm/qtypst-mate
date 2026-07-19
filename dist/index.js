@@ -26442,7 +26442,7 @@ var defaultOptions = {
   errorColor: "#ff0000",
   defaultMathEngine: "typst"
 };
-var QTYPSTMATE_CSS = `
+var TYPSTMATE_CSS = `
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
 figure.typtmate-codeblock { margin: 1rem 0; overflow-x: auto; }
@@ -26468,7 +26468,7 @@ var QTypstMate = (userOpts) => {
       return {
         css: [
           { content: "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" },
-          { content: QTYPSTMATE_CSS, inline: true }
+          { content: TYPSTMATE_CSS, inline: true }
         ]
       };
     }
@@ -26592,8 +26592,8 @@ function renderTypst(code, kind, processor, notePreamble, options) {
       svgEl.properties.style = `vertical-align: -${(shift / options.fontSize).toFixed(4)}em;`;
     }
   }
-  const classNames = [`qtypstmate-${kind}`, `qtypstmate-style-${processor.styling}`];
-  if (processor.id.length > 0) classNames.push(`qtypstmate-id-${processor.id}`);
+  const classNames = [`typstmate-${kind}`, `typstmate-style-${processor.styling}`];
+  if (processor.id.length > 0) classNames.push(`typstmate-id-${processor.id}`);
   return [
     {
       type: "element",
