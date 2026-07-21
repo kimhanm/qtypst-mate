@@ -31,8 +31,8 @@ interface QTypstMateOptions {
     /** Global Preamble used in every render */
     preamble: string;
     /** typst uses absolute font sizes (pt) instead of
-    * relative font sizes (em), so we have to translate them
-    * 1 pt * fontSize == 1 em */
+     * relative font sizes (em), so we have to translate them
+     * 1 pt * fontSize == 1 em */
     fontSize: number;
     fontPaths: string[];
     processors: Partial<ProcessorSets>;

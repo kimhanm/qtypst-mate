@@ -8,11 +8,11 @@ import { slug as slugAnchor } from "github-slugger";
  * `tag/with/dots` (including ancestors)
  */
 export interface TagFileRegistry {
-    tagFiles: Map<string, string>;
+  tagFiles: Map<string, string>;
 }
 
 function slugTag(tag: string): string {
-    return tag
+  return tag
     .split("/")
     .map((seg) => slugAnchor(seg))
     .join("/");
@@ -24,46 +24,45 @@ const registryCache = new Map<string, TagFileRegistry>();
  * Builds registry from files in contentDir
  */
 export function scanTagFiles(contentDir: string, importPath: string): TagFileRegistry {
-    const cacheKey = `${contentDir}::${importPath}`;
-    const cached = registryCache.get(cacheKey);
-    if (cached) return cached;
-    const tagFiles = new Map<string, string>();
+  const cacheKey = `${contentDir}::${importPath}`;
+  const cached = registryCache.get(cacheKey);
+  if (cached) return cached;
+  const tagFiles = new Map<string, string>();
 
-    const tagsDir = path.join(contentDir, importPath, "tags");
-    if (fs.existsSync(tagsDir)) {
-        for (const file of fs.readdirSync(tagsDir)) {
-            if (!file.endsWith(".typ")) continue;
-            const tag = slugTag(file.slice(0, -4).replaceAll(".", "/"));
-            tagFiles.set(tag, file);
-        }
+  const tagsDir = path.join(contentDir, importPath, "tags");
+  if (fs.existsSync(tagsDir)) {
+    for (const file of fs.readdirSync(tagsDir)) {
+      if (!file.endsWith(".typ")) continue;
+      const tag = slugTag(file.slice(0, -4).replaceAll(".", "/"));
+      tagFiles.set(tag, file);
     }
-    const registry = { tagFiles };
-    registryCache.set(cacheKey, registry);
-    return registry;
+  }
+  const registry = { tagFiles };
+  registryCache.set(cacheKey, registry);
+  return registry;
 }
 
 /** `foo/bar` should match both `foo` and `foo/bar` */
 export function expandTags(tags: string[]): Set<string> {
-    const expanded = new Set<string>();
-    for (const tag of tags) {
-        let parts = tag.split("/");
-        let acc = parts[0]!;
-        expanded.add(acc);
-        for (let i = 1; i < parts.length; i++) {
-            acc = `${acc}/${parts[i]}`;
-            expanded.add(acc);
-        }
+  const expanded = new Set<string>();
+  for (const tag of tags) {
+    const parts = tag.split("/");
+    let acc = parts[0]!;
+    expanded.add(acc);
+    for (let i = 1; i < parts.length; i++) {
+      acc = `${acc}/${parts[i]}`;
+      expanded.add(acc);
     }
-    return expanded;
+  }
+  return expanded;
 }
 
 export interface NoteFrontmatter {
-    tags?: string[];
-    imports?: string[];
-    definitions?: string[], 
-    "math-engine"?: string;
+  tags?: string[];
+  imports?: string[];
+  definitions?: string[];
+  "math-engine"?: string;
 }
-
 
 /**
  * Preamble assembly analogous to typst-mate's `syncFileCache`:
@@ -72,18 +71,18 @@ export interface NoteFrontmatter {
  * 3. definitions
  */
 export function buildNotePreamble(
-    frontmatter: NoteFrontMatter | undefined,
-    registry: TagFileRegistry,
-    importPath: string,
+  frontmatter: NoteFrontmatter | undefined,
+  registry: TagFileRegistry,
+  importPath: string,
 ): string {
-    if (!frontmatter) return "";
+  if (!frontmatter) return "";
 
-    let preamble = "";
-    for (const tag of expandTags(frontmatter.tags ?? [])) {
-        const file = registry.tagFiles.get(tag);
-        if (file) preamble += `#import "/${importPath}/tags/${file}": *;`;
-    }
-    for (const i of frontmatter.imports ?? []) preamble += `#import ${i};`;
-    for (const d of frontmatter.definitions ?? []) preamble += `#let ${d};`;
-    return preamble;
+  let preamble = "";
+  for (const tag of expandTags(frontmatter.tags ?? [])) {
+    const file = registry.tagFiles.get(tag);
+    if (file) preamble += `#import "/${importPath}/tags/${file}": *;`;
+  }
+  for (const i of frontmatter.imports ?? []) preamble += `#import ${i};`;
+  for (const d of frontmatter.definitions ?? []) preamble += `#let ${d};`;
+  return preamble;
 }

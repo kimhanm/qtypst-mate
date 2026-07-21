@@ -26254,7 +26254,7 @@ var DEFAULT_PROCESSORS = {
     {
       id: "tex",
       renderingEngine: "katex",
-      // offload processing to katex, no format required 
+      // offload processing to katex, no format required
       format: "",
       styling: "inline"
     },
@@ -26345,7 +26345,7 @@ function scanTagFiles(contentDir, importPath) {
 function expandTags(tags) {
   const expanded = /* @__PURE__ */ new Set();
   for (const tag of tags) {
-    let parts = tag.split("/");
+    const parts = tag.split("/");
     let acc = parts[0];
     expanded.add(acc);
     for (let i = 1; i < parts.length; i++) {
@@ -26579,7 +26579,7 @@ function renderTypst(code, kind, processor, notePreamble, options) {
     { workspace: options.contentDir, fontPaths: options.fontPaths },
     withBaseline
   );
-  const svg3 = result.svg.replaceAll('"#000000"', '"var(--typst-base-color, currentColor)"').replaceAll('"#000"', '"var(--typst-base-color, currentColor)"');
+  const svg3 = result.svg.replaceAll('"#ffffff"', '"var(--typst-bg-color, var(--light, #ffffff))"').replaceAll('"#fff"', '"var(--typst-bg-color, var(--light, #ffffff))"').replaceAll('"#000000"', '"var(--typst-base-color, currentColor)"').replaceAll('"#000"', '"var(--typst-base-color, currentColor)"');
   const root = fromHtmlIsomorphic(svg3, { fragment: true });
   const svgEl = root.children[0];
   const height = parseFloat(String(svgEl.properties.dataHeight));
