@@ -1,6 +1,6 @@
 {
   "name": "qtypst-mate",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typst math/codeblock rendering plugin for Quartz with typst-mate compatibility",
   "type": "module",
   "license": "MIT",

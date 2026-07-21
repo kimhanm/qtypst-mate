@@ -271,6 +271,8 @@ function renderTypst(
 
     // analogous to typst-mate's handling of base color (for dark/light themes etc.)
     const svg = result.svg
+        .replaceAll('"#ffffff"', '"var(--typst-bg-color, var(--light, #ffffff))"')
+        .replaceAll('"#fff"', '"var(--typst-bg-color, var(--light, #ffffff))"');
         .replaceAll('"#000000"', '"var(--typst-base-color, currentColor)"')
         .replaceAll('"#000"', '"var(--typst-base-color, currentColor)"');
     const root = fromHtmlIsomorphic(svg, { fragment: true });
