@@ -26259,6 +26259,12 @@ var DEFAULT_PROCESSORS = {
       styling: "inline"
     },
     {
+      id: "mid",
+      renderingEngine: "typst",
+      format: "#set page(margin: (x: 0pt, y: 0.3125em))\n${CODE}$",
+      styling: "middle"
+    },
+    {
       id: "",
       renderingEngine: "typst",
       format: "#set page(margin: (x: 0pt, y: 0.3125em))\n${CODE}$",
@@ -26445,6 +26451,8 @@ var defaultOptions = {
 var TYPSTMATE_CSS = `
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
+.typstmate-inline.typstmate-style-middle { vertical-align: middle; }
+.typstmate-inline.typstmate-style-middle svg { vertical-align: 0; !important; }
 figure.typtmate-codeblock { margin: 1rem 0; overflow-x: auto; }
 figure.typstmate-codeblock.typstmate-style-block-center { text-align: center; }
 `;
@@ -26563,7 +26571,7 @@ function rehypeTypstMate(options) {
   };
 }
 function renderTypst(code, kind, processor, notePreamble, options) {
-  const withBaseline = kind === "inline" && processor.format.includes("${CODE}$");
+  const withBaseline = kind === "inline" && processor.format.includes("${CODE}$") && processor.styling != "middle";
   const template = withBaseline ? processor.format.replace("${CODE}$", '$qtmpin("l1"){CODE}$') : processor.format;
   const body = processor.useReplaceAll ? template.replaceAll("{CODE}", code) : template.replace("{CODE}", code);
   const source = [

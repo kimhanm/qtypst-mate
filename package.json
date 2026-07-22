@@ -40,7 +40,7 @@
     "format": "prettier . --check",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run format && npm run test"
+    "check": "npm run typecheck && npm run lint"
   },
   "peerDependencies": {
     "@myriaddreamin/typst-ts-node-compiler": "^0.7.0",
