@@ -26449,6 +26449,9 @@ var defaultOptions = {
   defaultMathEngine: "typst"
 };
 var TYPSTMATE_CSS = `
+.typestmate-inline path:note([stroke]),
+.typstmate-display path:note([stroke]),
+figure.typstmate-codeblock path:note([stroke]) { strone: none !important; }
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
 .typstmate-inline.typstmate-style-middle { vertical-align: middle; }
