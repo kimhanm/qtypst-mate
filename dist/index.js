@@ -26449,14 +26449,14 @@ var defaultOptions = {
   defaultMathEngine: "typst"
 };
 var TYPSTMATE_CSS = `
-.typestmate-inline path:not([stroke]),
+.typstmate-inline path:not([stroke]),
 .typstmate-display path:not([stroke]),
-figure.typstmate-codeblock path:not([stroke]) { strone: none !important; }
+figure.typstmate-codeblock path:not([stroke]) { stroke: none !important; }
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
 .typstmate-inline.typstmate-style-middle { vertical-align: middle; }
-.typstmate-inline.typstmate-style-middle svg { vertical-align: 0; !important; }
-figure.typtmate-codeblock { margin: 1rem 0; overflow-x: auto; }
+.typstmate-inline.typstmate-style-middle svg { vertical-align: 0 !important; }
+figure.typstmate-codeblock { margin: 1rem 0; overflow-x: auto; }
 figure.typstmate-codeblock.typstmate-style-block-center { text-align: center; }
 `;
 var QTypstMate = (userOpts) => {
