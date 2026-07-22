@@ -3,7 +3,7 @@
 Typst rendering [Quartz](https://quartz.jzhao.xzy) plugin compatible with the Obsidian plugin [typst-mate](https://github.com/azyarashi/obsidian-typst-mate). Scaffolding forked from [quartz-community/latex](https://github.com/quartz-community/latex).
 Math and typst blocks are rendered to SVG at build-time.
 
-Will hopefully be added to `@quartz-community/qtypst-mate`
+See examples at <https://zosoz.org/garden/quartz-typst-mate-plugin>.
 
 ## Features
 
