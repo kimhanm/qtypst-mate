@@ -47,6 +47,12 @@ export const DEFAULT_PROCESSORS: ProcessorSets = {
       styling: "inline",
     },
     {
+      id: "mid",
+      renderingEngine: "typst",
+      format: "#set page(margin: (x: 0pt, y: 0.3125em))\n${CODE}$",
+      styling: "middle",
+    },
+    {
       id: "",
       renderingEngine: "typst",
       format: "#set page(margin: (x: 0pt, y: 0.3125em))\n${CODE}$",

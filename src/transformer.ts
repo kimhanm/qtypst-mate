@@ -68,6 +68,8 @@ const defaultOptions: QTypstMateOptions = {
 const TYPSTMATE_CSS = `
 .typstmate-display { display: block; margin 0.5rem 0; overflow-x: auto; }
 .typstmate-display.typstmate-style-block-center { text-align: center; }
+.typstmate-inline.typstmate-style-middle { vertical-align: middle; }
+.typstmate-inline.typstmate-style-middle svg { vertical-align: 0; !important; }
 figure.typtmate-codeblock { margin: 1rem 0; overflow-x: auto; }
 figure.typstmate-codeblock.typstmate-style-block-center { text-align: center; }
 `;
@@ -237,7 +239,8 @@ function renderTypst(
   options: RehypeOptions,
 ): ElementContent[] {
   // baseline is not relevant for display math
-  const withBaseline = kind === "inline" && processor.format.includes("${CODE}$");
+  const withBaseline =
+    kind === "inline" && processor.format.includes("${CODE}$") && processor.styling != "middle";
   // see rehype-typst for how the qtmpin/qtpstate hackery works
   const template = withBaseline
     ? processor.format.replace("${CODE}$", '$qtmpin("l1"){CODE}$')
